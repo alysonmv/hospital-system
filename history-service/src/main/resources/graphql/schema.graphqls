@@ -1,0 +1,38 @@
+type Query {
+    buscarHistoricoPaciente(pacienteId: ID!): [MedicalHistoryDTO]
+    listarConsultasFuturas(pacienteId: ID): [AppointmentDTO]
+    listarConsultasPassadas(pacienteId: ID): [AppointmentDTO]
+    buscarConsultaPorId(id: ID!): AppointmentDTO
+}
+
+type AppointmentDTO {
+    id: ID!
+    dataConsulta: String!
+    status: String!
+    descricao: String
+    medico: UserDTO
+    paciente: PatientDTO
+    createdAt: String
+    updatedAt: String
+}
+
+type MedicalHistoryDTO {
+    id: ID!
+    descricao: String!
+    dataRegistro: String!
+    paciente: PatientDTO
+}
+
+type UserDTO {
+    id: ID!
+    nome: String!
+    email: String!
+    role: String!
+}
+
+type PatientDTO {
+    id: ID!
+    nome: String!
+    dataNascimento: String
+    telefone: String
+}

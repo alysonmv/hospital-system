@@ -1,0 +1,177 @@
+
+services:
+
+  # ── Infrastructure ────────────────────────────────────────────────────────
+
+  postgres-appointment:
+    image: postgres:16-alpine
+    container_name: hospital-postgres-appointment
+    environment:
+      POSTGRES_DB: appointment_db
+      POSTGRES_USER: hospital
+      POSTGRES_PASSWORD: hospital123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-appointment-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hospital -d appointment_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hospital-net
+
+  postgres-history:
+    image: postgres:16-alpine
+    container_name: hospital-postgres-history
+    environment:
+      POSTGRES_DB: history_db
+      POSTGRES_USER: hospital
+      POSTGRES_PASSWORD: hospital123
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg-history-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hospital -d history_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hospital-net
+
+  postgres-notification:
+    image: postgres:16-alpine
+    container_name: hospital-postgres-notification
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: hospital
+      POSTGRES_PASSWORD: hospital123
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg-notification-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hospital -d notification_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hospital-net
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: hospital-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"   # Management UI
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - hospital-net
+
+  # ── Microservices ─────────────────────────────────────────────────────────
+
+  appointment-service:
+    build:
+      context: ./appointment-service
+      dockerfile: Dockerfile
+    container_name: hospital-appointment-service
+    environment:
+      DB_HOST: postgres-appointment
+      DB_PORT: 5432
+      DB_NAME: appointment_db
+      DB_USER: hospital
+      DB_PASSWORD: hospital123
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      JWT_EXPIRATION: 86400000
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres-appointment:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - hospital-net
+    restart: on-failure
+
+  history-service:
+    build:
+      context: ./history-service
+      dockerfile: Dockerfile
+    container_name: hospital-history-service
+    environment:
+      DB_HOST: postgres-history
+      DB_PORT: 5432
+      DB_NAME: history_db
+      DB_USER: hospital
+      DB_PASSWORD: hospital123
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      JWT_EXPIRATION: 86400000
+      SERVER_PORT: 8081
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres-history:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - hospital-net
+    restart: on-failure
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: hospital-notification-service
+    environment:
+      DB_HOST: postgres-notification
+      DB_PORT: 5432
+      DB_NAME: notification_db
+      DB_USER: hospital
+      DB_PASSWORD: hospital123
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      SERVER_PORT: 8082
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres-notification:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - hospital-net
+    restart: on-failure
+
+volumes:
+  pg-appointment-data:
+  pg-history-data:
+  pg-notification-data:
+  rabbitmq-data:
+
+networks:
+  hospital-net:
+    driver: bridge

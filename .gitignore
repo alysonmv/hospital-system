@@ -1,0 +1,28 @@
+# Maven
+target/
+*.class
+*.jar
+*.war
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+
+# VS Code
+.vscode/
+
+# Spring Boot
+*.log
+logs/
+
+# Docker
+.dockerignore
+
+# Environment
+.env
+*.env
+
+# OS
+.DS_Store
+Thumbs.db

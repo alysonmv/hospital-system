@@ -1,0 +1,234 @@
+{
+  "info": {
+    "name": "Hospital Management System",
+    "description": "Collection completa para o sistema hospitalar de microsserviços",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url_appointment", "value": "http://localhost:8080" },
+    { "key": "base_url_history",     "value": "http://localhost:8081" },
+    { "key": "base_url_notification","value": "http://localhost:8082" },
+    { "key": "token",                "value": "" },
+    { "key": "appointment_id",       "value": "" },
+    { "key": "patient_id",           "value": "b1b2c3d4-0000-0000-0000-000000000001" },
+    { "key": "medico_id",            "value": "a1b2c3d4-0000-0000-0000-000000000001" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login - Médico",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var resp = pm.response.json();",
+                  "pm.collectionVariables.set('token', resp.token);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Token received', () => pm.expect(resp.token).to.not.be.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url_appointment}}/api/v1/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"medico@hospital.com\",\n  \"senha\": \"Hospital@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login - Enfermeiro",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url_appointment}}/api/v1/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"enfermeiro@hospital.com\",\n  \"senha\": \"Hospital@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login - Paciente",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url_appointment}}/api/v1/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"paciente@hospital.com\",\n  \"senha\": \"Hospital@123\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Appointments",
+      "item": [
+        {
+          "name": "Criar Consulta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var resp = pm.response.json();",
+                  "if (resp.id) pm.collectionVariables.set('appointment_id', resp.id);",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url_appointment}}/api/v1/appointments",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dataConsulta\": \"2026-09-15T10:00:00\",\n  \"medicoId\": \"a1b2c3d4-0000-0000-0000-000000000001\",\n  \"pacienteId\": \"b1b2c3d4-0000-0000-0000-000000000001\",\n  \"descricao\": \"Consulta de rotina - check-up anual\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Listar Consultas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url_appointment}}/api/v1/appointments?page=0&size=10",
+              "host": ["{{base_url_appointment}}"],
+              "path": ["api", "v1", "appointments"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "status", "value": "AGENDADA", "disabled": true }
+              ]
+            },
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Buscar Consulta por ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url_appointment}}/api/v1/appointments/c1b2c3d4-0000-0000-0000-000000000001",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Atualizar Consulta",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url_appointment}}/api/v1/appointments/c1b2c3d4-0000-0000-0000-000000000001",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dataConsulta\": \"2026-09-20T14:00:00\",\n  \"status\": \"CONFIRMADA\",\n  \"descricao\": \"Paciente confirmou presença por telefone\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Cancelar Consulta",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url_appointment}}/api/v1/appointments/c1b2c3d4-0000-0000-0000-000000000001",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GraphQL — History Service",
+      "item": [
+        {
+          "name": "Buscar Histórico do Paciente",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url_history}}/graphql",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query {\\n  buscarHistoricoPaciente(pacienteId: \\\"b1b2c3d4-0000-0000-0000-000000000001\\\") {\\n    id\\n    descricao\\n    dataRegistro\\n    paciente { nome telefone }\\n  }\\n}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Listar Consultas Futuras",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url_history}}/graphql",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query {\\n  listarConsultasFuturas(pacienteId: \\\"b1b2c3d4-0000-0000-0000-000000000001\\\") {\\n    id\\n    dataConsulta\\n    status\\n    descricao\\n    medico { nome email }\\n    paciente { nome telefone }\\n  }\\n}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Listar Consultas Passadas",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url_history}}/graphql",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query {\\n  listarConsultasPassadas {\\n    id\\n    dataConsulta\\n    status\\n    medico { nome }\\n    paciente { nome }\\n  }\\n}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Buscar Consulta por ID (GraphQL)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url_history}}/graphql",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query {\\n  buscarConsultaPorId(id: \\\"c1b2c3d4-0000-0000-0000-000000000001\\\") {\\n    id\\n    dataConsulta\\n    status\\n    descricao\\n    medico { id nome email role }\\n    paciente { id nome dataNascimento telefone }\\n    createdAt\\n    updatedAt\\n  }\\n}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Checks",
+      "item": [
+        {
+          "name": "appointment-service health",
+          "request": { "method": "GET", "url": "{{base_url_appointment}}/actuator/health" }
+        },
+        {
+          "name": "history-service health",
+          "request": { "method": "GET", "url": "{{base_url_history}}/actuator/health" }
+        },
+        {
+          "name": "notification-service health",
+          "request": { "method": "GET", "url": "{{base_url_notification}}/actuator/health" }
+        }
+      ]
+    }
+  ]
+}
