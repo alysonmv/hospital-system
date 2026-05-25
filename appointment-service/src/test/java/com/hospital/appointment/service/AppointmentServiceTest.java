@@ -33,6 +33,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AppointmentService Unit Tests")
@@ -90,10 +91,10 @@ class AppointmentServiceTest {
         // Mock security context
         Authentication auth = mock(Authentication.class);
         SecurityContext ctx = mock(SecurityContext.class);
-        when(ctx.getAuthentication()).thenReturn(auth);
-        when(auth.getName()).thenReturn(medico.getEmail());
+        lenient().when(ctx.getAuthentication()).thenReturn(auth);
+        lenient().when(auth.getName()).thenReturn(medico.getEmail());
         SecurityContextHolder.setContext(ctx);
-        when(userRepository.findByEmail(medico.getEmail())).thenReturn(Optional.of(medico));
+        lenient().when(userRepository.findByEmail(medico.getEmail())).thenReturn(Optional.of(medico));
     }
 
     @Test
